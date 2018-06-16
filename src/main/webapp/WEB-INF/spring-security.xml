@@ -1,0 +1,80 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+
+    <!-- enable use-expressions -->
+    <http
+        auto-config="true"
+        use-expressions="true"
+        entry-point-ref="unauthorizedEntryPoint"
+    >
+        <session-management invalid-session-url="/login" />
+        <!-- access denied page -->
+        <access-denied-handler error-page="/login?error=true" />
+        <intercept-url pattern="/dashboard/**" access="hasRole('ADMIN')" requires-channel="https"/>
+        <intercept-url pattern="/dashboard**" access="hasRole('ADMIN')" requires-channel="https"/>
+        <intercept-url pattern="/login**" access="permitAll" requires-channel="https"/>
+        <form-login
+                login-processing-url="/login-page"
+                login-page="/login"
+                authentication-failure-url="/login?error=true"
+                username-parameter="username"
+                password-parameter="password"
+                default-target-url="/dashboard/#"
+                />
+        <headers />
+        <session-management>
+            <concurrency-control max-sessions="1" error-if-maximum-exceeded="true" />
+        </session-management>
+        <logout
+                invalidate-session="true"
+                logout-success-url="/login"
+                logout-url="/logout"
+                />
+        <custom-filter ref="beforeCaptureFilter" before="FORM_LOGIN_FILTER"/>
+        <custom-filter ref="captchaVerifierFilter" after="FORM_LOGIN_FILTER"/>
+        <csrf/>
+    </http>
+
+    <beans:bean id="unauthorizedEntryPoint" class="com.itnetsoft.auth.UnauthorizedEntryPoint" />
+
+    <!--<beans:bean class="com.itnetsoft.auth.AuthenticationTokenProcessingFilter" id="authenticationTokenProcessingFilter"/>-->
+
+    <authentication-manager alias="authenticationManager">
+        <authentication-provider>
+            <jdbc-user-service data-source-ref="dataSource"
+               users-by-username-query="SELECT U.username, U.password,
+                                           CASE U.enabled
+                                                WHEN 1 THEN 'true'
+                                                    ELSE 'false'
+                                            END 'enabled'
+                                           FROM users U WHERE BINARY U.username=?"
+               authorities-by-username-query="SELECT U.username,  R.role FROM users U
+                                                JOIN roles R ON R.id = U.role_id
+                                                WHERE BINARY U.username=?"/>
+            <password-encoder ref="encoder" />
+        </authentication-provider>
+    </authentication-manager>
+
+    <beans:bean id="captchaVerifierFilter" class="com.itnetsoft.auth.CaptchaVerifierFilter">
+        <beans:property name="useProxy" value="false"/>
+        <beans:property name="proxyPort" value=""/>
+        <beans:property name="proxyHost" value=""/>
+        <beans:property name="failureUrl" value="/login?error=true"/>
+        <beans:property name="captchaFilter" ref="beforeCaptureFilter"/>
+        <beans:property name="privateKey" value="6Ld_ev8SAAAAANenvLM22Cx5PNTC_8lW6VjHXesW"/>
+    </beans:bean>
+
+    <beans:bean id="beforeCaptureFilter" class="com.itnetsoft.auth.BeforeCapthaFilter" />
+
+    <beans:bean id="encoder"
+                class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+        <beans:constructor-arg name="strength" value="10" />
+    </beans:bean>
+
+</beans:beans>

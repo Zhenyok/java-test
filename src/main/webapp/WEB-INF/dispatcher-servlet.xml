@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+        ">
+    <!-- Root Context: Defining resources, that are available to all app and servlets -->
+    <!-- Enabling option of annotation configuration (@Annotation-based configuration)-->
+
+
+    <!-- Defining folders, in which beans components will be searching automatically (@Component, @Service)  -->
+    <context:component-scan base-package="com.itnetsoft" />
+
+    <mvc:resources location="/resources/itnetsoft/assets/" mapping="/resources/itnetsoft/assets/**" />
+    <mvc:resources location="${upload.dir}" mapping="/uploads/**"/>
+
+    <mvc:annotation-driven/>
+
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
+        <property name="locations">
+            <list>
+                <value>classpath:config/db.properties</value>
+                <value>classpath:config/system.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <!--Internationalisation -->
+    <bean id="messageSource"
+          class="org.springframework.context.support.ResourceBundleMessageSource">
+
+        <property name="basename" value="messages.messages" />
+        <property name="defaultEncoding" value="UTF-8" />
+    </bean>
+
+    <bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+        <property name="validationMessageSource" ref="messageSource"/>
+    </bean>
+
+    <mvc:interceptors>
+        <bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+            <property name="paramName" value="lang" />
+        </bean>
+    </mvc:interceptors>
+    <bean id="localeResolver"
+          class="org.springframework.web.servlet.i18n.SessionLocaleResolver">
+        <property name="defaultLocale" value="en" />
+    </bean>
+
+    <!-- View directory-->
+    <bean id="viewResolver"
+          class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix">
+            <value>/resources/itnetsoft/views/</value>
+        </property>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <bean id="filterMultipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize"   value="100000000"/>
+        <property name="maxInMemorySize" value="4096"/>
+    </bean>
+
+    <!-- Файл с настройками ресурсов для работы с данными (Data Access Resources) -->
+    <import resource="dal.xml"/>
+
+    <!-- Файл с настройками безопасности -->
+    <!--<import resource="spring-security.xml" />-->
+
+
+</beans>
